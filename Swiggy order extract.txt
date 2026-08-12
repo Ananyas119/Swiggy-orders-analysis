@@ -1,0 +1,45 @@
+let allOrders = [];
+let offset = 0;
+const limit = 10;
+const maxPages = 50; // change as needed
+
+async function fetchSwiggyOrders() {
+  try {
+    for (let i = 0; i < maxPages; i++) {
+      const response = await fetch(`https://www.swiggy.com/dapi/order/all?offset=${offset}&limit=${limit}`, {
+        method: "GET",
+        credentials: "include", // important to include session cookies
+        headers: {
+          "Accept": "application/json",
+        }
+      });
+
+      const res = await response.json();
+
+      if (!res?.data?.orders || res.data.orders.length === 0) break;
+
+      console.log(`Fetched ${res.data.orders.length} orders at offset ${offset}`);
+      allOrders = allOrders.concat(res.data.orders);
+      offset += limit;
+    }
+  } catch (err) {
+    console.error("Error fetching Swiggy orders:", err);
+  } finally {
+    console.log("Total Orders:", allOrders.length);
+    downloadData(allOrders, "swiggy_orders.json");
+  }
+}
+
+function downloadData(data, filename) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+fetchSwiggyOrders();
